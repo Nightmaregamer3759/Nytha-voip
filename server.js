@@ -88,7 +88,7 @@ const server = http.createServer((req, res) => {
                 if (!apiKey) throw new Error("GEMINI_API_KEY não configurada");
 
                 const respostaGemini = await fetch(
-                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
                     {
                         method: "POST",
                         headers: {
@@ -96,14 +96,16 @@ const server = http.createServer((req, res) => {
                             "x-goog-api-key": apiKey
                         },
                         body: JSON.stringify({
-                            contents: [{
-                                role: "user",
-                                parts: [{ text: mensagem }]
-                            }],
-                            generationConfig: {
-                                maxOutputTokens: 300
-                            }
-                        })
+                                contents: [
+                                    {
+                                        parts: [
+                                            {
+                                                text: mensagem
+                                            }
+                                        ]
+                                    }
+                                ]
+                            })
                     }
                 );
 
@@ -146,8 +148,10 @@ const server = http.createServer((req, res) => {
                     erro
                 );
 
+                // Para diagnóstico, devolvemos HTTP 200 para o
+                // TurboWarp conseguir mostrar o erro real no reporter.
                 res.writeHead(
-                    400,
+                    200,
                     {
                         "Content-Type":
                             "application/json; charset=utf-8"
@@ -156,7 +160,8 @@ const server = http.createServer((req, res) => {
 
                 res.end(
                     JSON.stringify({
-                        erro:
+                        resposta:
+                            "ERRO GEMINI: " +
                             String(
                                 erro && erro.message
                                     ? erro.message
