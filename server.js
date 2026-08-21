@@ -33,6 +33,8 @@ const server = http.createServer((req, res) => {
         req.url === "/ia"
     ) {
 
+        console.log("[/ia] Requisição recebida");
+
         let corpo = "";
 
         req.on("data", parte => {
@@ -156,7 +158,11 @@ const server = http.createServer((req, res) => {
                 res.end(
                     JSON.stringify({
                         erro:
-                            "JSON_INVALIDO"
+                            String(
+                                erro && erro.message
+                                    ? erro.message
+                                    : erro
+                            )
                     })
                 );
             }
