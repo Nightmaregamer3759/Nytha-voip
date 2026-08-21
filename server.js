@@ -4,8 +4,169 @@ const http = require("http");
 const PORT = process.env.PORT || 3000;
 
 const server = http.createServer((req, res) => {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("Servidor VoIP Online!");
+
+    // CORS para TurboWarp/navegador
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type"
+    );
+    res.setHeader(
+        "Access-Control-Allow-Methods",
+        "GET, POST, OPTIONS"
+    );
+
+    if (req.method === "OPTIONS") {
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+
+    // ==========================================
+    // TESTE DA ROTA DE IA
+    // POST /ia
+    // { "mensagem": "Olá" }
+    // ==========================================
+
+    if (
+        req.method === "POST" &&
+        req.url === "/ia"
+    ) {
+
+        let corpo = "";
+
+        req.on("data", parte => {
+
+            corpo += parte;
+
+            // Evita requisições gigantes.
+            if (corpo.length > 100000) {
+                req.destroy();
+            }
+        });
+
+        req.on("end", () => {
+
+            try {
+
+                const dados =
+                    JSON.parse(corpo || "{}");
+
+                const mensagem =
+                    String(
+                        dados.mensagem || ""
+                    ).trim();
+
+                if (!mensagem) {
+
+                    res.writeHead(
+                        400,
+                        {
+                            "Content-Type":
+                                "application/json; charset=utf-8"
+                        }
+                    );
+
+                    res.end(
+                        JSON.stringify({
+                            erro:
+                                "MENSAGEM_VAZIA"
+                        })
+                    );
+
+                    return;
+                }
+
+                console.log(
+                    "[IA TESTE]",
+                    mensagem
+                );
+
+                // Por enquanto é uma resposta de teste.
+                // Depois substituímos isto pela IA real.
+                const respostaIA =
+                    "Eu recebi: " + mensagem;
+
+                res.writeHead(
+                    200,
+                    {
+                        "Content-Type":
+                            "application/json; charset=utf-8"
+                    }
+                );
+
+                res.end(
+                    JSON.stringify({
+                        resposta:
+                            respostaIA
+                    })
+                );
+
+            }
+
+            catch (erro) {
+
+                console.error(
+                    "Erro na rota /ia:",
+                    erro
+                );
+
+                res.writeHead(
+                    400,
+                    {
+                        "Content-Type":
+                            "application/json; charset=utf-8"
+                    }
+                );
+
+                res.end(
+                    JSON.stringify({
+                        erro:
+                            "JSON_INVALIDO"
+                    })
+                );
+            }
+        });
+
+        return;
+    }
+
+
+    // Página principal do servidor
+    if (
+        req.method === "GET" &&
+        req.url === "/"
+    ) {
+
+        res.writeHead(
+            200,
+            {
+                "Content-Type":
+                    "text/plain; charset=utf-8"
+            }
+        );
+
+        res.end(
+            "Servidor VoIP + IA Online!"
+        );
+
+        return;
+    }
+
+
+    res.writeHead(
+        404,
+        {
+            "Content-Type":
+                "application/json; charset=utf-8"
+        }
+    );
+
+    res.end(
+        JSON.stringify({
+            erro: "NAO_ENCONTRADO"
+        })
+    );
 });
 
 const wss = new WebSocket.Server({ server });
