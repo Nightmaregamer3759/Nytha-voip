@@ -45,7 +45,7 @@ const server = http.createServer((req, res) => {
             }
         });
 
-        req.on("end", () => {
+        req.on("end", async () => {
 
             try {
 
@@ -82,10 +82,44 @@ const server = http.createServer((req, res) => {
                     mensagem
                 );
 
-                // Por enquanto é uma resposta de teste.
-                // Depois substituímos isto pela IA real.
+                const apiKey = process.env.GEMINI_API_KEY;
+                if (!apiKey) throw new Error("GEMINI_API_KEY não configurada");
+
+                const respostaGemini = await fetch(
+                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "x-goog-api-key": apiKey
+                        },
+                        body: JSON.stringify({
+                            contents: [{
+                                role: "user",
+                                parts: [{ text: mensagem }]
+                            }],
+                            generationConfig: {
+                                temperature: 0.8,
+                                maxOutputTokens: 300
+                            }
+                        })
+                    }
+                );
+
+                const dadosGemini = await respostaGemini.json();
+
+                if (!respostaGemini.ok) {
+                    console.error("Erro Gemini:", dadosGemini);
+                    throw new Error(
+                        dadosGemini?.error?.message ||
+                        ("Gemini HTTP " + respostaGemini.status)
+                    );
+                }
+
                 const respostaIA =
-                    "Eu recebi: " + mensagem;
+                    dadosGemini?.candidates?.[0]?.content?.parts
+                        ?.map(parte => parte.text || "").join("").trim()
+                    || "A IA não retornou uma resposta.";
 
                 res.writeHead(
                     200,
